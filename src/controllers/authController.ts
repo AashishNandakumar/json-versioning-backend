@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 import { AuthRequest } from '../middlewares/auth';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+const JWT_SECRET = process.env.JWT_SECRET as string;
 const JWT_EXPIRES_IN = '7d';
 
 // Helper to format user object for response (exclude password)
@@ -33,7 +33,8 @@ export const register = async (req: Request, res: Response) => {
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     return res.status(201).json({ success: true, token, user: userToResponse(user) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: 'Registration failed.' });
+    console.error('Error in register:', err);
+    return res.status(500).json({ success: false, error: 'An internal server error occurred.' });
   }
 };
 
@@ -54,7 +55,8 @@ export const login = async (req: Request, res: Response) => {
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     return res.json({ success: true, token, user: userToResponse(user) });
   } catch (err) {
-    return res.status(500).json({ success: false, error: 'Login failed.' });
+    console.error('Error in login:', err);
+    return res.status(500).json({ success: false, error: 'An internal server error occurred.' });
   }
 };
 
@@ -65,6 +67,11 @@ export const validate = async (req: AuthRequest, res: Response) => {
     }
     return res.json({ success: true, user: userToResponse(req.user) });
   } catch (err) {
+    // This catch block in 'validate' seems to be for specific token validation errors (401)
+    // rather than unexpected 500 errors. So, it might be best to leave its message specific,
+    // or clarify if this too should be generic. For now, assuming only 500 errors get generic messages.
+    // If this should also be generic for any error, the line below should be changed.
+    console.error('Error in validate:', err); // Added logging
     return res.status(401).json({ success: false, error: 'Invalid or expired token.' });
   }
 };
